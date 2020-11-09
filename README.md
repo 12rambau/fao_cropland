@@ -30,7 +30,7 @@ You could also consider using the `cropland.py` file by runing :
 cd ~
 nohup python3 fao_cropland/cropland.py &
 ```
-:warning: this file has very few printing outpu and they are in french
+:warning: this file has very few printing output and they are in french
 
 
 
