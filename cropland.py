@@ -44,7 +44,7 @@ def get_grid(src_rst, max_polygon=0):
         index = 0
         data_flat = data.flatten()
         for y,x in indices:
-            if data_flat[index] != np.iinfo(np.int16).min:
+            if data_flat[index] != -1:
                 x_min, y_max = t * (x,y)
                 x_max = x_min + move_x
                 y_min = y_max + move_y
@@ -125,8 +125,10 @@ def align_raster(src_rst, template_rst, out_rst):
 
 def main():
     # get the countries borders as shapes
+    print("récuperer la liste des pays")
     countries = pm.country_list
 
+    print("transformer les pays en shapes")
     shapes = []
     for index, row in countries.iterrows():
         #update_progress(index / (len(countries)-1), 'Countries loaded')
@@ -135,6 +137,7 @@ def main():
         shapes.append(shape(country_json['features'][0]['geometry']))
     
     # cut the map of cropland on the countries
+    print("cut the map to countries shapes")
     with rasterio.open(pm.cropland_raster) as src:
         out_image, out_transform = mask(src, shapes, all_touched=True)
     
@@ -155,10 +158,12 @@ def main():
     # value of max polygone
     # put to 0 to study the full map
     # the 200 first values are placed in the north of kazakstan
+    print("creer la grille")
     max_polygon = 0
     gdf_grid = get_grid(pm.crop_masked, max_polygon=max_polygon)
 
     # Create the 2013 map out of the full map
+    print("creer la carte de 2013")
     with rasterio.open(pm.llc_full) as src:
     
         kwargs = src.meta.copy()
@@ -178,16 +183,18 @@ def main():
             dst.write(data, indexes=1)
             
     # create the ecozones map
+    print("zonal analysis")
     gdf_zonal = gdf_zonal_stats(gdf_grid, pm.llc_2013_raster)
 
-    ecozones = [pm.ecozones[i] for i in pm.ecozones]
-
+    ecozones = [i for i in pm.ecozones]
+    #ecozones = [210]
+    
+    print("creer les cartes")
     for index, zone in enumerate(ecozones):
     
         if zone in gdf_zonal.columns:
             fraction_raster(gdf_zonal, zone, pm.crop_masked, pm.llc_2013_map.format(zone))
             align_raster(pm.llc_2013_map.format(zone), pm.crop_masked, pm.llc_2013_map_masked.format(zone))
-            Map.add_raster(pm.llc_2013_map_masked.format(zone), layer_name=pm.ecozones[zone])
         
     return 
 
